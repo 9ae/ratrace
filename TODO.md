@@ -1,7 +1,7 @@
 - [x] Instead of manually asking for the room, automatically assign users to a room as they join the game. The rooms are numbered as integers, starting at 1 and going up. Remove the room input field from the UI.
     - [x] in findAvailableRoom make sure game is not active
-- [ ] Remove the individual git repositories, and init everything in a mono-repository here.
-    - [ ] Define game status as enums, and update throughout backend and frontend
+- [x] Remove the individual git repositories, and init everything in a mono-repository here.
+    - [x] Define game status as enums, and update throughout backend and frontend
     - [ ] Define websocket events as enums, and update throughout backend and frontend
 - [-] Create startup script file: Start redis server. Open new terminal tab for ratrace-backend, run `npm run dev`. Open new terminal tab for ratrace-frontend, run `npm run dev`. 
 - [ ] Autofocus on the text field for all the players when the game starts

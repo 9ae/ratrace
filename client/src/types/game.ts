@@ -1,3 +1,9 @@
+export enum GameStatus {
+  WAITING = 'waiting',
+  ACTIVE = 'active',
+  FINISHED = 'finished'
+}
+
 export interface Player {
   id: string;
   username: string;
@@ -14,7 +20,7 @@ export interface GameState {
   roomId: string;
   players: Player[];
   phrase: string;
-  status: 'waiting' | 'active' | 'finished';
+  status: GameStatus;
   timeRemaining?: number;
 }
 

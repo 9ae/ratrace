@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { GameRoom, Player, TypingProgress } from '../types/game';
+import { GameRoom, Player, TypingProgress, GameStatus } from '../types/game';
 import { RedisService } from './RedisService';
 import { generatePhrase, calculateWPM, calculateAccuracy } from '../utils/gameUtils';
 
@@ -21,7 +21,7 @@ export class GameService {
       const room = this.rooms.get(roomId);
       
       // If room doesn't exist or has space and is waiting for players
-      if (!room || (room.players.size < room.maxPlayers && room.status === 'waiting')) {
+      if (!room || (room.players.size < room.maxPlayers && room.status === GameStatus.WAITING)) {
         return roomId;
       }
       
@@ -44,7 +44,7 @@ export class GameService {
           id: roomId,
           players: new Map(),
           phrase: generatePhrase(),
-          status: 'waiting',
+          status: GameStatus.WAITING,
           maxPlayers: 8
         };
         this.rooms.set(roomId, room);
@@ -116,7 +116,7 @@ export class GameService {
             id: roomId,
             players: new Map(),
             phrase: generatePhrase(),
-            status: 'waiting' as const,
+            status: GameStatus.WAITING,
             maxPlayers: 8
           };
           this.rooms.set(roomId, room);
@@ -214,7 +214,7 @@ export class GameService {
       return;
     }
 
-    if (room.status !== 'waiting') {
+    if (room.status !== GameStatus.WAITING) {
       socket.emit('error', 'Game already started or finished');
       return;
     }
@@ -232,7 +232,7 @@ export class GameService {
     if (!roomId) return;
 
     const room = this.rooms.get(roomId);
-    if (!room || room.status !== 'active') return;
+    if (!room || room.status !== GameStatus.ACTIVE) return;
 
     const player = room.players.get(socket.id);
     if (!player || player.finished) return;
@@ -257,7 +257,7 @@ export class GameService {
     // Check if all players finished
     const allFinished = Array.from(room.players.values()).every(p => p.finished);
     if (allFinished) {
-      room.status = 'finished';
+      room.status = GameStatus.FINISHED;
       this.endGame(roomId);
     }
   }
@@ -268,7 +268,7 @@ export class GameService {
     console.log(room);
     if (!room) return;
 
-    room.status = 'active';
+    room.status = GameStatus.ACTIVE;
     room.startTime = Date.now();
 
     this.io.to(roomId).emit('game-started', { startTime: room.startTime });

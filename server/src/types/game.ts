@@ -1,3 +1,9 @@
+export enum GameStatus {
+  WAITING = 'waiting',
+  ACTIVE = 'active',
+  FINISHED = 'finished'
+}
+
 export interface Player {
   id: string;
   username: string;
@@ -7,13 +13,14 @@ export interface Player {
   currentCharIndex: number;
   finished: boolean;
   finishTime?: number;
+  rank?: number;
 }
 
 export interface GameRoom {
   id: string;
   players: Map<string, Player>;
   phrase: string;
-  status: 'waiting' | 'active' | 'finished';
+  status: GameStatus;
   startTime?: number;
   maxPlayers: number;
 }
@@ -22,7 +29,7 @@ export interface GameState {
   roomId: string;
   players: Player[];
   phrase: string;
-  status: 'waiting' | 'active' | 'finished';
+  status: GameStatus;
   timeRemaining?: number;
 }
 

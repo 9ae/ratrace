@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSocket } from '@/hooks/useSocket';
+import { GameStatus } from '@/types/game';
 
 interface RaceGameProps {
   roomId: string;
@@ -130,7 +131,7 @@ export default function RaceGame({ roomId, phrase, onLeaveGame }: RaceGameProps)
             </div>
           )}
         </div>
-        {gameState?.status === 'waiting' && (
+        {gameState?.status === GameStatus.WAITING && (
 
           <button
             onClick={handleStartGame}

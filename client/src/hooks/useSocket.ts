@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { GameState } from '@/types/game';
+import { GameState, GameStatus } from '@/types/game';
 
 export function useSocket(serverPath: string = 'http://localhost:3001') {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -59,7 +59,7 @@ export function useSocket(serverPath: string = 'http://localhost:3001') {
     socketInstance.on('game-state', (state: GameState) => {
       console.log('📥 Received game-state event (persistent listener):', state);
       setGameState(state);
-      if (state.status === 'active') {
+      if (state.status === GameStatus.ACTIVE) {
         console.log('🎮 Game is active, setting gameStarted to true');
         setGameStarted(true);
       }
