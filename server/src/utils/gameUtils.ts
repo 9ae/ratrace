@@ -1,18 +1,7 @@
-const SAMPLE_PHRASES = [
-  "The quick brown fox jumps over the lazy dog",
-  "Pack my box with five dozen liquor jugs",
-  "How vexingly quick daft zebras jump",
-  "Waltz, bad nymph, for quick jigs vex",
-  "Sphinx of black quartz, judge my vow",
-  "Two driven jocks help fax my big quiz",
-  "Five quacking zephyrs jolt my wax bed",
-  "The five boxing wizards jump quickly",
-  "Bright vixens jump; dozy fowl quack",
-  "Quick zephyrs blow, vexing daft Jim"
-];
+import { getRandomPhrase } from '../data/phrases';
 
 export function generatePhrase(): string {
-  return SAMPLE_PHRASES[Math.floor(Math.random() * SAMPLE_PHRASES.length)];
+  return getRandomPhrase();
 }
 
 export function calculateWPM(typedText: string, startTime: number): number {
@@ -37,5 +26,5 @@ export function calculateAccuracy(typedText: string, targetText: string): number
 }
 
 export function generateRoomId(): string {
-  return Math.random().toString(36).substr(2, 8).toUpperCase();
+  return Math.random().toString(36).substring(2, 10).toUpperCase();
 }
