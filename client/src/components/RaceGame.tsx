@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSocket } from '@/hooks/useSocket';
-import { GameStatus } from '@/types/game';
+import { GameStatus, ClientEvents } from '@/types/game';
 
 interface RaceGameProps {
   roomId: string;
@@ -28,7 +28,7 @@ export default function RaceGame({ roomId, phrase, onLeaveGame }: RaceGameProps)
     // Request game state when component mounts and socket is ready
     if (socket && !gameState) {
       console.log('🔄 RaceGame requesting game state for room:', roomId);
-      socket.emit('get-game-state', { roomId });
+      socket.emit(ClientEvents.GET_GAME_STATE, { roomId });
     }
   }, [socket, gameState, roomId]);
 
@@ -39,7 +39,7 @@ export default function RaceGame({ roomId, phrase, onLeaveGame }: RaceGameProps)
     }
     console.log('🚀 Starting game for room:', gameState.roomId);
     console.log('📤 Emitting start-game event');
-    socket.emit('start-game', { roomId: gameState.roomId });
+    socket.emit(ClientEvents.START_GAME, { roomId: gameState.roomId });
   };
 
   const handleInputChange = (value: string) => {
@@ -49,7 +49,7 @@ export default function RaceGame({ roomId, phrase, onLeaveGame }: RaceGameProps)
       setCurrentInput(value);
 
       if (socket) {
-        socket.emit('start-typing', {
+        socket.emit(ClientEvents.START_TYPING, {
           playerId: socket.id,
           currentText: value,
           position: (value.length / phrase.length) * 100

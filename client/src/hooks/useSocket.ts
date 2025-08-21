@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { GameState, GameStatus } from '@/types/game';
+import { GameState, GameStatus, ServerEvents, ClientEvents } from '@/types/game';
 
 export function useSocket(serverPath: string = 'http://localhost:3001') {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -23,7 +23,7 @@ export function useSocket(serverPath: string = 'http://localhost:3001') {
       forceNew: false // Allow socket reuse
     });
 
-    socketInstance.on('connect', () => {
+    socketInstance.on(ServerEvents.CONNECT, () => {
       setIsConnected(true);
       console.log('✅ Connected to server:', socketInstance.id);
       
@@ -35,7 +35,7 @@ export function useSocket(serverPath: string = 'http://localhost:3001') {
           console.log('🔄 Found saved session, attempting to rejoin:', session);
           setIsReconnecting(true);
           
-          socketInstance.emit('rejoin-room', {
+          socketInstance.emit(ClientEvents.REJOIN_ROOM, {
             username: session.username,
             previousSocketId: session.socketId
           });
@@ -46,17 +46,17 @@ export function useSocket(serverPath: string = 'http://localhost:3001') {
       }
     });
 
-    socketInstance.on('disconnect', (reason) => {
+    socketInstance.on(ServerEvents.DISCONNECT, (reason) => {
       setIsConnected(false);
       console.log('❌ Disconnected from server, reason:', reason);
     });
 
-    socketInstance.on('connect_error', (error) => {
+    socketInstance.on(ServerEvents.CONNECT_ERROR, (error) => {
       console.error('❌ Connection error:', error);
     });
 
     // Set up persistent game event listeners
-    socketInstance.on('game-state', (state: GameState) => {
+    socketInstance.on(ServerEvents.GAME_STATE, (state: GameState) => {
       console.log('📥 Received game-state event (persistent listener):', state);
       setGameState(state);
       if (state.status === GameStatus.ACTIVE) {
@@ -65,30 +65,30 @@ export function useSocket(serverPath: string = 'http://localhost:3001') {
       }
     });
 
-    socketInstance.on('game-started', () => {
+    socketInstance.on(ServerEvents.GAME_STARTED, () => {
       console.log('🎮 Game started (persistent listener)');
       setGameStarted(true);
     });
 
-    socketInstance.on('race-finished', (data) => {
+    socketInstance.on(ServerEvents.RACE_FINISHED, (data) => {
       console.log('🏁 Race finished (persistent listener):', data);
       setRaceFinished(true);
     });
 
-    socketInstance.on('game-ended', (data) => {
+    socketInstance.on(ServerEvents.GAME_ENDED, (data) => {
       console.log('🏆 Game ended (persistent listener):', data);
       setGameResults(data);
       // Clear session when game ends
       localStorage.removeItem('ratrace-session');
     });
 
-    socketInstance.on('rejoin-success', (data) => {
+    socketInstance.on(ServerEvents.REJOIN_SUCCESS, (data) => {
       console.log('✅ Successfully rejoined room:', data);
       setIsReconnecting(false);
       setGameState(data.gameState);
     });
 
-    socketInstance.on('rejoin-failed', (error) => {
+    socketInstance.on(ServerEvents.REJOIN_FAILED, (error) => {
       console.log('❌ Failed to rejoin room:', error);
       setIsReconnecting(false);
       localStorage.removeItem('ratrace-session');

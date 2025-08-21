@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { GameRoom, Player, TypingProgress, GameStatus } from '../types/game';
+import { GameRoom, Player, TypingProgress, GameStatus, ServerEvents } from '../types/game';
 import { RedisService } from './RedisService';
 import { generatePhrase, calculateWPM, calculateAccuracy } from '../utils/gameUtils';
 
@@ -74,7 +74,7 @@ export class GameService {
       socket.join(roomId);
 
       console.log(`Emitting room-joined event to ${username}`);
-      socket.emit('room-joined', { roomId, phrase: room.phrase });
+      socket.emit(ServerEvents.ROOM_JOINED, { roomId, phrase: room.phrase });
 
       console.log(`Broadcasting game state for room ${roomId}`);
       this.broadcastGameState(roomId);
@@ -82,7 +82,7 @@ export class GameService {
 
     } catch (error) {
       console.error('Error joining room:', error);
-      socket.emit('error', 'Failed to join room');
+      socket.emit(ServerEvents.ERROR, 'Failed to join room');
     }
   }
 
@@ -169,12 +169,12 @@ export class GameService {
         timeRemaining: room.startTime ? Math.max(0, 120000 - (Date.now() - room.startTime)) : undefined
       };
       
-      socket.emit('rejoin-success', { gameState });
+      socket.emit(ServerEvents.REJOIN_SUCCESS, { gameState });
       this.broadcastGameState(roomId!);
       
     } catch (error) {
       console.error('Error rejoining room:', error);
-      socket.emit('rejoin-failed', 'Failed to rejoin room');
+      socket.emit(ServerEvents.REJOIN_FAILED, 'Failed to rejoin room');
     }
   }
 
@@ -184,7 +184,7 @@ export class GameService {
     
     if (!room) {
       console.error(`❌ Room ${roomId} not found when sending game state`);
-      socket.emit('error', 'Room not found');
+      socket.emit(ServerEvents.ERROR, 'Room not found');
       return;
     }
 
@@ -197,7 +197,7 @@ export class GameService {
     };
 
     console.log(`📤 Sending game-state to socket ${socket.id}:`, gameState);
-    socket.emit('game-state', gameState);
+    socket.emit(ServerEvents.GAME_STATE, gameState);
   }
 
   async startGame(socket: Socket, data: { roomId: string }) {
@@ -210,17 +210,17 @@ export class GameService {
 
     if (!room) {
       console.error(`❌ Room ${roomId} not found! Available rooms: ${Array.from(this.rooms.keys()).join(', ')}`);
-      socket.emit('error', 'Room not found');
+      socket.emit(ServerEvents.ERROR, 'Room not found');
       return;
     }
 
     if (room.status !== GameStatus.WAITING) {
-      socket.emit('error', 'Game already started or finished');
+      socket.emit(ServerEvents.ERROR, 'Game already started or finished');
       return;
     }
 
     if (room.players.size < 1) {
-      socket.emit('error', 'Need at least 1 player to start');
+      socket.emit(ServerEvents.ERROR, 'Need at least 1 player to start');
       return;
     }
 
@@ -249,7 +249,7 @@ export class GameService {
     if (currentText === phrase) {
       player.finished = true;
       player.finishTime = Date.now();
-      socket.emit('race-finished', { position: this.getPlayerRank(roomId, socket.id) });
+      socket.emit(ServerEvents.RACE_FINISHED, { position: this.getPlayerRank(roomId, socket.id) });
     }
 
     this.broadcastGameState(roomId);
@@ -271,7 +271,7 @@ export class GameService {
     room.status = GameStatus.ACTIVE;
     room.startTime = Date.now();
 
-    this.io.to(roomId).emit('game-started', { startTime: room.startTime });
+    this.io.to(roomId).emit(ServerEvents.GAME_STARTED, { startTime: room.startTime });
     this.broadcastGameState(roomId);
   }
 
@@ -286,7 +286,7 @@ export class GameService {
         rank: index + 1
       }));
 
-    this.io.to(roomId).emit('game-ended', { results });
+    this.io.to(roomId).emit(ServerEvents.GAME_ENDED, { results });
 
     // Clean up room after 30 seconds
     setTimeout(() => {
@@ -313,7 +313,7 @@ export class GameService {
     console.log(`📤 Emitting game-state to room ${roomId}:`, gameState);
     console.log(`👥 Room has ${room.players.size} players:`, Array.from(room.players.keys()));
     
-    this.io.to(roomId).emit('game-state', gameState);
+    this.io.to(roomId).emit(ServerEvents.GAME_STATE, gameState);
     console.log(`✅ game-state event sent to room ${roomId}`);
   }
 

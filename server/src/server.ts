@@ -7,6 +7,7 @@ const morgan = require('morgan');
 import dotenv from 'dotenv';
 import { GameService } from './services/GameService';
 import { RedisService } from './services/RedisService';
+import { ClientEvents } from './types/game';
 
 dotenv.config();
 
@@ -54,37 +55,37 @@ app.get('/health', (req, res) => {
 io.on('connection', (socket) => {
   console.log(`✅ Player connected: ${socket.id} at ${new Date().toISOString()}`);
 
-  socket.on('join-room', async (data) => {
+  socket.on(ClientEvents.JOIN_ROOM, async (data) => {
     console.log(`📥 join-room event from ${socket.id}:`, data);
     await gameService.joinRoom(socket, data.username);
   });
 
-  socket.on('rejoin-room', async (data) => {
+  socket.on(ClientEvents.REJOIN_ROOM, async (data) => {
     console.log(`🔄 rejoin-room event from ${socket.id}:`, data);
     await gameService.rejoinRoom(socket, data.username, data.previousSocketId);
   });
 
-  socket.on('start-game', async (data) => {
+  socket.on(ClientEvents.START_GAME, async (data) => {
     console.log(`🎮 start-game event from ${socket.id}:`, data);
     await gameService.startGame(socket, data);
   });
 
-  socket.on('get-game-state', async (data) => {
+  socket.on(ClientEvents.GET_GAME_STATE, async (data) => {
     console.log(`📋 get-game-state event from ${socket.id}:`, data);
     await gameService.sendGameState(socket, data.roomId);
   });
 
-  socket.on('start-typing', async (data) => {
+  socket.on(ClientEvents.START_TYPING, async (data) => {
     console.log(`⌨️ start-typing event from ${socket.id}`);
     await gameService.updateTypingProgress(socket, data);
   });
 
-  socket.on('disconnect', (reason) => {
+  socket.on(ClientEvents.DISCONNECT, (reason) => {
     console.log(`❌ Player disconnected: ${socket.id}, reason: ${reason} at ${new Date().toISOString()}`);
     gameService.handleDisconnect(socket);
   });
 
-  socket.on('error', (error) => {
+  socket.on(ClientEvents.ERROR, (error) => {
     console.error(`🚨 Socket error for ${socket.id}:`, error);
   });
 });

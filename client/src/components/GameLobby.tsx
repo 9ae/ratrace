@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useSocket } from '@/hooks/useSocket';
+import { ClientEvents, ServerEvents } from '@/types/game';
 
 interface GameLobbyProps {
   onJoinGame: (roomId: string, phrase: string) => void;
@@ -17,26 +18,26 @@ export default function GameLobby({ onJoinGame }: GameLobbyProps) {
 
     setIsJoining(true);
 
-    socket.emit('join-room', {
+    socket.emit(ClientEvents.JOIN_ROOM, {
       username: username.trim()
     });
 
-    socket.once('room-joined', (data) => {
+    socket.once(ServerEvents.ROOM_JOINED, (data) => {
       console.log('📥 Room joined, requesting current game state');
       // Save session for reconnection
       saveSession(data.roomId, username.trim());
       // Request current game state since RaceGame component isn't mounted yet
-      socket.emit('get-game-state', { roomId: data.roomId });
+      socket.emit(ClientEvents.GET_GAME_STATE, { roomId: data.roomId });
       onJoinGame(data.roomId, data.phrase);
       setIsJoining(false);
     });
 
-    socket.once('room-full', () => {
+    socket.once(ServerEvents.ROOM_FULL, () => {
       alert('Room is full! Try another room.');
       setIsJoining(false);
     });
 
-    socket.once('error', (error) => {
+    socket.once(ServerEvents.ERROR, (error) => {
       alert(`Error: ${error}`);
       setIsJoining(false);
     });
