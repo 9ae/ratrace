@@ -97,8 +97,7 @@ export function useSocket(serverPath: string = 'http://localhost:3001') {
 
     socketInstance.on(ServerEvents.WINNER_PROMOTED, (data) => {
       console.log('🏆 Winner promoted:', data);
-      // You could add a notification system here
-      alert(data.message);
+      // Winner is automatically moved to winner room - no alert needed
     });
 
     // Handle room changes (when moved to winner room)

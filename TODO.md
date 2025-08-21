@@ -4,7 +4,10 @@
     - [x] Define game status as enums, and update throughout backend and frontend
     - [x] Define websocket events as enums, and update throughout backend and frontend
 - [-] Create startup script file: Start redis server. Open new terminal tab for ratrace-backend, run `npm run dev`. Open new terminal tab for ratrace-frontend, run `npm run dev`. 
-- [ ] Once all the players finish the game in a room, the winner gets put into another room with other winners in their respective rooms.
+- [x] Once all the players finish the game in a room, the winner gets put into another room with other winners in their respective rooms.
+    - [x] Update room ID
+    - [x] mark winner with trophy emoji instead of check
+    - [x] hide text until the game starts
 - [ ] Extract sample phrases out of gameUtils into it's own file. Fill it with 100 lines from Audre Lorde's poems.
 - [ ] Autofocus on the text field for all the players when the game starts
 - [ ] Make design mock for game

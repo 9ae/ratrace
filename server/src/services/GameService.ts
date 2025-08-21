@@ -254,7 +254,9 @@ export class GameService {
     if (currentText === phrase) {
       player.finished = true;
       player.finishTime = Date.now();
-      socket.emit(ServerEvents.RACE_FINISHED, { position: this.getPlayerRank(roomId, socket.id) });
+      const rank = this.getPlayerRank(roomId, socket.id);
+      player.rank = rank;
+      socket.emit(ServerEvents.RACE_FINISHED, { position: rank });
     }
 
     this.broadcastGameState(roomId);

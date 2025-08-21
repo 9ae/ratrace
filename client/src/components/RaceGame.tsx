@@ -17,6 +17,8 @@ export default function RaceGame({ roomId, phrase: initialPhrase, onLeaveGame }:
 
   // Use phrase from gameState if available, otherwise use initial phrase
   const currentPhrase = gameState?.phrase || initialPhrase;
+  // Use room ID from gameState if available, otherwise use initial room ID
+  const currentRoomId = gameState?.roomId || roomId;
 
   console.log('🎯 RaceGame render - gameState:', gameState);
   console.log('🎯 RaceGame render - gameStarted:', gameStarted);
@@ -90,7 +92,7 @@ export default function RaceGame({ roomId, phrase: initialPhrase, onLeaveGame }:
     return (
       <div className="bg-white rounded-lg shadow-2xl p-6">
         <div className="text-center py-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Room: {roomId}</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Room: {currentRoomId}</h2>
           {isReconnecting ? (
             <>
               <p className="text-yellow-600">Reconnecting to game...</p>
@@ -123,7 +125,7 @@ export default function RaceGame({ roomId, phrase: initialPhrase, onLeaveGame }:
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">
-            Room: {roomId}
+            Room: {currentRoomId}
             {gameState?.roomType === RoomType.WINNER && (
               <span className="ml-2 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
                 🏆 Winner Room
@@ -143,7 +145,13 @@ export default function RaceGame({ roomId, phrase: initialPhrase, onLeaveGame }:
                   >
                     <span>{animals[index % 8]}</span>
                     {player.username}
-                    {player.finished && <span className="text-green-600">✓</span>}
+                    {player.finished && (
+                      player.rank === 1 ? (
+                        <span className="text-yellow-600">🏆</span>
+                      ) : (
+                        <span className="text-green-600">✓</span>
+                      )
+                    )}
                   </span>
                 ))}
               </div>
@@ -170,7 +178,7 @@ export default function RaceGame({ roomId, phrase: initialPhrase, onLeaveGame }:
       </div>
       {gameState && (
         <>
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <div className={`mb-6 p-4 bg-gray-50 rounded-lg ${gameStarted ? 'visible' : 'invisible'}`}>
             <div className="text-xl font-mono leading-relaxed">
               {currentPhrase.split('').map((char: string, index: number) => (
                 <span key={index} className={`${getCharacterClass(index)} px-0.5 py-1 rounded`}>
@@ -190,9 +198,6 @@ export default function RaceGame({ roomId, phrase: initialPhrase, onLeaveGame }:
               className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
               disabled={!gameStarted || raceFinished}
             />
-            <div className="text-xs text-gray-500 mt-1">
-              Debug: gameStarted={gameStarted.toString()}, raceFinished={raceFinished.toString()}, disabled={(!gameStarted || raceFinished).toString()}
-            </div>
           </div>
 
           {gameState?.players && gameState.players.length > 0 && (
