@@ -28,7 +28,13 @@ export enum ServerEvents {
   GAME_STARTED = 'game-started',
   RACE_FINISHED = 'race-finished',
   GAME_ENDED = 'game-ended',
+  WINNER_PROMOTED = 'winner-promoted',
   ERROR = 'error'
+}
+
+export enum RoomType {
+  REGULAR = 'regular',
+  WINNER = 'winner'
 }
 
 export interface Player {
@@ -49,6 +55,7 @@ export interface GameState {
   phrase: string;
   status: GameStatus;
   timeRemaining?: number;
+  roomType?: RoomType;
 }
 
 export interface TypingProgress {

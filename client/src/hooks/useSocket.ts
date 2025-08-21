@@ -12,6 +12,7 @@ export function useSocket(serverPath: string = 'http://localhost:3001') {
   const [raceFinished, setRaceFinished] = useState(false);
   const [gameResults, setGameResults] = useState<any>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const [roomChanged, setRoomChanged] = useState<{roomId: string, phrase: string} | null>(null);
 
   useEffect(() => {
     console.log('🔄 useSocket effect running, attempting to connect to:', serverPath);
@@ -94,6 +95,24 @@ export function useSocket(serverPath: string = 'http://localhost:3001') {
       localStorage.removeItem('ratrace-session');
     });
 
+    socketInstance.on(ServerEvents.WINNER_PROMOTED, (data) => {
+      console.log('🏆 Winner promoted:', data);
+      // You could add a notification system here
+      alert(data.message);
+    });
+
+    // Handle room changes (when moved to winner room)
+    socketInstance.on(ServerEvents.ROOM_JOINED, (data) => {
+      if (data.isWinnerRoom) {
+        console.log('🏆 Moved to winner room:', data);
+        setRoomChanged({ roomId: data.roomId, phrase: data.phrase });
+        // Reset game state for new room
+        setGameStarted(false);
+        setRaceFinished(false);
+        setGameResults(null);
+      }
+    });
+
     setSocket(socketInstance);
 
     return () => {
@@ -129,6 +148,10 @@ export function useSocket(serverPath: string = 'http://localhost:3001') {
     console.log('🗑️ Session cleared');
   };
 
+  const clearRoomChanged = () => {
+    setRoomChanged(null);
+  };
+
   return {
     socket,
     isConnected,
@@ -137,11 +160,13 @@ export function useSocket(serverPath: string = 'http://localhost:3001') {
     raceFinished,
     gameResults,
     isReconnecting,
+    roomChanged,
     setGameState,
     setGameStarted,
     setRaceFinished,
     setGameResults,
     saveSession,
-    clearSession
+    clearSession,
+    clearRoomChanged
   };
 }

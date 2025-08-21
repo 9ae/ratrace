@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { GameRoom, Player, TypingProgress, GameStatus, ServerEvents } from '../types/game';
+import { GameRoom, Player, TypingProgress, GameStatus, ServerEvents, RoomType } from '../types/game';
 import { RedisService } from './RedisService';
 import { generatePhrase, calculateWPM, calculateAccuracy } from '../utils/gameUtils';
 
@@ -12,16 +12,17 @@ export class GameService {
     private redisService: RedisService
   ) { }
 
-  private findAvailableRoom(): string {
-    // Start from room 1 and find the first available room
+  private findAvailableRoom(roomType: RoomType = RoomType.REGULAR): string {
+    // Different numbering schemes for different room types
+    const prefix = roomType === RoomType.WINNER ? 'W' : '';
     let roomNumber = 1;
     
     while (true) {
-      const roomId = roomNumber.toString();
+      const roomId = `${prefix}${roomNumber}`;
       const room = this.rooms.get(roomId);
       
       // If room doesn't exist or has space and is waiting for players
-      if (!room || (room.players.size < room.maxPlayers && room.status === GameStatus.WAITING)) {
+      if (!room || (room.players.size < room.maxPlayers && room.status === GameStatus.WAITING && room.type === roomType)) {
         return roomId;
       }
       
@@ -45,7 +46,8 @@ export class GameService {
           players: new Map(),
           phrase: generatePhrase(),
           status: GameStatus.WAITING,
-          maxPlayers: 8
+          maxPlayers: 8,
+          type: RoomType.REGULAR
         };
         this.rooms.set(roomId, room);
         console.log(`Created new room ${roomId} with phrase: ${room.phrase}`);
@@ -117,7 +119,8 @@ export class GameService {
             players: new Map(),
             phrase: generatePhrase(),
             status: GameStatus.WAITING,
-            maxPlayers: 8
+            maxPlayers: 8,
+            type: RoomType.REGULAR
           };
           this.rooms.set(roomId, room);
         }
@@ -166,7 +169,8 @@ export class GameService {
         players: Array.from(room.players.values()),
         phrase: room.phrase,
         status: room.status,
-        timeRemaining: room.startTime ? Math.max(0, 120000 - (Date.now() - room.startTime)) : undefined
+        timeRemaining: room.startTime ? Math.max(0, 120000 - (Date.now() - room.startTime)) : undefined,
+        roomType: room.type
       };
       
       socket.emit(ServerEvents.REJOIN_SUCCESS, { gameState });
@@ -193,7 +197,8 @@ export class GameService {
       players: Array.from(room.players.values()),
       phrase: room.phrase,
       status: room.status,
-      timeRemaining: room.startTime ? Math.max(0, 120000 - (Date.now() - room.startTime)) : undefined
+      timeRemaining: room.startTime ? Math.max(0, 120000 - (Date.now() - room.startTime)) : undefined,
+      roomType: room.type
     };
 
     console.log(`📤 Sending game-state to socket ${socket.id}:`, gameState);
@@ -288,6 +293,14 @@ export class GameService {
 
     this.io.to(roomId).emit(ServerEvents.GAME_ENDED, { results });
 
+    // Move winner to winner room after a short delay
+    if (results.length > 0 && results[0].rank === 1) {
+      const winner = results[0];
+      setTimeout(() => {
+        this.moveWinnerToWinnerRoom(winner);
+      }, 5000); // Give 5 seconds to see results
+    }
+
     // Clean up room after 30 seconds
     setTimeout(() => {
       this.cleanupRoom(roomId);
@@ -307,7 +320,8 @@ export class GameService {
       players: Array.from(room.players.values()),
       phrase: room.phrase,
       status: room.status,
-      timeRemaining: room.startTime ? Math.max(0, 120000 - (Date.now() - room.startTime)) : undefined
+      timeRemaining: room.startTime ? Math.max(0, 120000 - (Date.now() - room.startTime)) : undefined,
+      roomType: room.type
     };
 
     console.log(`📤 Emitting game-state to room ${roomId}:`, gameState);
@@ -358,6 +372,68 @@ export class GameService {
     }
 
     this.playerRooms.delete(socket.id);
+  }
+
+  private moveWinnerToWinnerRoom(winner: Player) {
+    console.log(`🏆 Moving winner ${winner.username} to winner room`);
+    
+    // Find an available winner room
+    const winnerRoomId = this.findAvailableRoom(RoomType.WINNER);
+    let winnerRoom = this.rooms.get(winnerRoomId);
+    
+    // Create winner room if it doesn't exist
+    if (!winnerRoom) {
+      console.log(`Creating new winner room ${winnerRoomId}`);
+      winnerRoom = {
+        id: winnerRoomId,
+        players: new Map(),
+        phrase: generatePhrase(),
+        status: GameStatus.WAITING,
+        maxPlayers: 8,
+        type: RoomType.WINNER
+      };
+      this.rooms.set(winnerRoomId, winnerRoom);
+    }
+
+    // Reset winner's game state for new game
+    const resetWinner: Player = {
+      ...winner,
+      position: 0,
+      wpm: 0,
+      accuracy: 100,
+      currentCharIndex: 0,
+      finished: false,
+      finishTime: undefined,
+      rank: undefined
+    };
+
+    // Add winner to the winner room
+    winnerRoom.players.set(winner.id, resetWinner);
+    this.playerRooms.set(winner.id, winnerRoomId);
+
+    // Find the winner's socket and move them to the new room
+    const winnerSocket = this.findSocketById(winner.id);
+    if (winnerSocket) {
+      winnerSocket.join(winnerRoomId);
+      winnerSocket.emit(ServerEvents.WINNER_PROMOTED, { 
+        message: 'Congratulations! You won and have been promoted to a Winner Room!',
+        newRoomId: winnerRoomId 
+      });
+      winnerSocket.emit(ServerEvents.ROOM_JOINED, { 
+        roomId: winnerRoomId, 
+        phrase: winnerRoom.phrase,
+        isWinnerRoom: true 
+      });
+      
+      console.log(`✅ Winner ${winner.username} moved to winner room ${winnerRoomId}`);
+      this.broadcastGameState(winnerRoomId);
+    }
+  }
+
+  private findSocketById(playerId: string): Socket | null {
+    // Get all connected sockets and find the one with matching id
+    const sockets = Array.from(this.io.sockets.sockets.values());
+    return sockets.find(socket => socket.id === playerId) || null;
   }
 
   private cleanupRoom(roomId: string) {

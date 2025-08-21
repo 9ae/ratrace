@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSocket } from '@/hooks/useSocket';
-import { GameStatus, ClientEvents } from '@/types/game';
+import { GameStatus, ClientEvents, RoomType } from '@/types/game';
 
 interface RaceGameProps {
   roomId: string;
@@ -10,10 +10,13 @@ interface RaceGameProps {
   onLeaveGame: () => void;
 }
 
-export default function RaceGame({ roomId, phrase, onLeaveGame }: RaceGameProps) {
+export default function RaceGame({ roomId, phrase: initialPhrase, onLeaveGame }: RaceGameProps) {
   const [currentInput, setCurrentInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const { socket, gameState, gameStarted, raceFinished, isReconnecting, isConnected } = useSocket();
+
+  // Use phrase from gameState if available, otherwise use initial phrase
+  const currentPhrase = gameState?.phrase || initialPhrase;
 
   console.log('🎯 RaceGame render - gameState:', gameState);
   console.log('🎯 RaceGame render - gameStarted:', gameStarted);
@@ -23,6 +26,17 @@ export default function RaceGame({ roomId, phrase, onLeaveGame }: RaceGameProps)
       inputRef.current.focus();
     }
   }, [gameStarted]);
+
+  // Reset typing state when phrase changes (e.g., moved to winner room)
+  useEffect(() => {
+    if (currentPhrase !== initialPhrase) {
+      console.log('🔄 Phrase changed, resetting typing state');
+      setCurrentInput('');
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }
+  }, [currentPhrase, initialPhrase]);
 
   useEffect(() => {
     // Request game state when component mounts and socket is ready
@@ -45,14 +59,14 @@ export default function RaceGame({ roomId, phrase, onLeaveGame }: RaceGameProps)
   const handleInputChange = (value: string) => {
     if (!gameStarted || raceFinished) return;
 
-    if (value.length <= phrase.length && phrase.startsWith(value)) {
+    if (value.length <= currentPhrase.length && currentPhrase.startsWith(value)) {
       setCurrentInput(value);
 
       if (socket) {
         socket.emit(ClientEvents.START_TYPING, {
           playerId: socket.id,
           currentText: value,
-          position: (value.length / phrase.length) * 100
+          position: (value.length / currentPhrase.length) * 100
         });
       }
 
@@ -62,7 +76,7 @@ export default function RaceGame({ roomId, phrase, onLeaveGame }: RaceGameProps)
 
   const getCharacterClass = (index: number) => {
     if (index < currentInput.length) {
-      return currentInput[index] === phrase[index] ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100';
+      return currentInput[index] === currentPhrase[index] ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100';
     }
     if (index === currentInput.length) {
       return 'bg-blue-200';
@@ -110,6 +124,11 @@ export default function RaceGame({ roomId, phrase, onLeaveGame }: RaceGameProps)
         <div>
           <h2 className="text-2xl font-bold text-gray-800">
             Room: {roomId}
+            {gameState?.roomType === RoomType.WINNER && (
+              <span className="ml-2 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+                🏆 Winner Room
+              </span>
+            )}
           </h2>
           {gameState && (
             <div className="mt-2">
@@ -153,7 +172,7 @@ export default function RaceGame({ roomId, phrase, onLeaveGame }: RaceGameProps)
         <>
           <div className="mb-6 p-4 bg-gray-50 rounded-lg">
             <div className="text-xl font-mono leading-relaxed">
-              {phrase.split('').map((char, index) => (
+              {currentPhrase.split('').map((char: string, index: number) => (
                 <span key={index} className={`${getCharacterClass(index)} px-0.5 py-1 rounded`}>
                   {char}
                 </span>

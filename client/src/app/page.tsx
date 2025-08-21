@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import GameLobby from '@/components/GameLobby';
 import RaceGame from '@/components/RaceGame';
+import { useSocket } from '@/hooks/useSocket';
 
 export default function Home() {
   const [currentView, setCurrentView] = useState<'lobby' | 'game'>('lobby');
   const [gameData, setGameData] = useState<{ roomId: string; phrase: string } | null>(null);
+  const { roomChanged, clearRoomChanged } = useSocket();
 
   const handleJoinGame = (roomId: string, phrase: string) => {
     setGameData({ roomId, phrase });
@@ -17,6 +19,15 @@ export default function Home() {
     setCurrentView('lobby');
     setGameData(null);
   };
+
+  // Handle room changes (when moved to winner room)
+  useEffect(() => {
+    if (roomChanged && currentView === 'game') {
+      console.log('🔄 Updating game data for new room:', roomChanged);
+      setGameData({ roomId: roomChanged.roomId, phrase: roomChanged.phrase });
+      clearRoomChanged();
+    }
+  }, [roomChanged, currentView, clearRoomChanged]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-4">
