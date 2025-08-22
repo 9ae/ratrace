@@ -20,9 +20,6 @@ export default function RaceGame({ roomId, phrase: initialPhrase, onLeaveGame }:
   // Use room ID from gameState if available, otherwise use initial room ID
   const currentRoomId = gameState?.roomId || roomId;
 
-  console.log('🎯 RaceGame render - gameState:', gameState);
-  console.log('🎯 RaceGame render - gameStarted:', gameStarted);
-
   useEffect(() => {
     if (gameStarted && inputRef.current) {
       inputRef.current.focus();
@@ -158,23 +155,24 @@ export default function RaceGame({ roomId, phrase: initialPhrase, onLeaveGame }:
             </div>
           )}
         </div>
-        {gameState?.status === GameStatus.WAITING && (
+        <div className="flex gap-4 mb-6">
+          {gameState?.status === GameStatus.WAITING && (
+            <button
+              onClick={handleStartGame}
+              disabled={!socket || !gameState || gameState.players.length < 1}
+              className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium text-lg"
+            >
+              Start Game
+            </button>
+          )}
 
           <button
-            onClick={handleStartGame}
-            disabled={!socket || !gameState || gameState.players.length < 1}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium text-lg mb-6"
+            onClick={onLeaveGame}
+            className="flex-1 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium text-lg"
           >
-            Start Game
+            Leave Game
           </button>
-        )}
-
-        <button
-          onClick={onLeaveGame}
-          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-        >
-          Leave Game
-        </button>
+        </div>
       </div>
       {gameState && (
         <>
@@ -195,7 +193,7 @@ export default function RaceGame({ roomId, phrase: initialPhrase, onLeaveGame }:
               value={currentInput}
               onChange={(e) => handleInputChange(e.target.value)}
               placeholder={gameStarted ? "Start typing..." : "Get ready..."}
-              className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-3 text-lg text-black border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
               disabled={!gameStarted || raceFinished}
             />
           </div>

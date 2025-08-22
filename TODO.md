@@ -8,9 +8,9 @@
     - [x] Update room ID
     - [x] mark winner with trophy emoji instead of check
     - [x] hide text until the game starts
-- [ ] Extract sample phrases out of gameUtils into it's own file. Fill it with 100 lines from Audre Lorde's poems.
-- [ ] Autofocus on the text field for all the players when the game starts
+- [x] Extract sample phrases out of gameUtils into it's own file. Fill it with 100 lines from Audre Lorde's poems.
+- [x] Autofocus on the text field for all the players when the game starts
 - [ ] Make design mock for game
-- [ ] Make start and leave game buttons aligned
+- [x] Make start and leave game buttons aligned
 - [ ] Instead of showing a progress bar at the bottom, show the player's emoji moving across a race track
-- [ ] fix input field colors
+- [x] fix input field colors
