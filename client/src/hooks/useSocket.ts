@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -12,7 +13,7 @@ export function useSocket(serverPath: string = 'http://localhost:3001') {
   const [raceFinished, setRaceFinished] = useState(false);
   const [gameResults, setGameResults] = useState<any>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
-  const [roomChanged, setRoomChanged] = useState<{roomId: string, phrase: string} | null>(null);
+  const [roomChanged, setRoomChanged] = useState<{ roomId: string, phrase: string } | null>(null);
 
   useEffect(() => {
     console.log('🔄 useSocket effect running, attempting to connect to:', serverPath);
@@ -27,7 +28,7 @@ export function useSocket(serverPath: string = 'http://localhost:3001') {
     socketInstance.on(ServerEvents.CONNECT, () => {
       setIsConnected(true);
       console.log('✅ Connected to server:', socketInstance.id);
-      
+
       // Check for existing session and auto-rejoin
       const savedSession = localStorage.getItem('ratrace-session');
       if (savedSession) {
@@ -35,7 +36,7 @@ export function useSocket(serverPath: string = 'http://localhost:3001') {
           const session = JSON.parse(savedSession);
           console.log('🔄 Found saved session, attempting to rejoin:', session);
           setIsReconnecting(true);
-          
+
           socketInstance.emit(ClientEvents.REJOIN_ROOM, {
             username: session.username,
             previousSocketId: session.socketId
