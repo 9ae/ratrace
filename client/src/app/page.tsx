@@ -30,7 +30,7 @@ export default function Home() {
   }, [roomChanged, currentView, clearRoomChanged]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 to-emerald-800 p-4">
       <div className="container mx-auto">
         <header className="text-center py-8">
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-2">
@@ -45,7 +45,7 @@ export default function Home() {
           {currentView === 'lobby' && (
             <GameLobby onJoinGame={handleJoinGame} />
           )}
-          
+
           {currentView === 'game' && gameData && (
             <RaceGame
               roomId={gameData.roomId}
