@@ -28,7 +28,7 @@ npm install
 Create `.env.local`:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3001
+API_URL=http://localhost:3001
 ```
 
 ### Development
@@ -63,7 +63,7 @@ npm start
 
 ### Vercel (Recommended)
 1. Connect GitHub repository
-2. Set `NEXT_PUBLIC_API_URL` environment variable
+2. Set `API_URL` environment variable
 3. Deploy automatically
 
 ### Render
