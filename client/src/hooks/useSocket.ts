@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { GameState, GameStatus, ServerEvents, ClientEvents } from '@/types/game';
 
-export function useSocket(serverPath: string = 'http://localhost:3001') {
+export function useSocket(serverPath: string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001') {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [gameState, setGameState] = useState<GameState | null>(null);
