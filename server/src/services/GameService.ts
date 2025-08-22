@@ -16,16 +16,16 @@ export class GameService {
     // Different numbering schemes for different room types
     const prefix = roomType === RoomType.WINNER ? 'W' : '';
     let roomNumber = 1;
-    
+
     while (true) {
       const roomId = `${prefix}${roomNumber}`;
       const room = this.rooms.get(roomId);
-      
+
       // If room doesn't exist or has space and is waiting for players
       if (!room || (room.players.size < room.maxPlayers && room.status === GameStatus.WAITING && room.type === roomType)) {
         return roomId;
       }
-      
+
       roomNumber++;
     }
   }
@@ -36,7 +36,7 @@ export class GameService {
       // Find available room or create a new one
       const roomId = this.findAvailableRoom();
       console.log(`Assigning player ${username} to room ${roomId}`);
-      
+
       let room = this.rooms.get(roomId);
 
       if (!room) {
@@ -90,12 +90,12 @@ export class GameService {
 
   async rejoinRoom(socket: Socket, username: string, previousSocketId?: string) {
     console.log(`🔄 Player ${username} attempting to rejoin a room (previous socket: ${previousSocketId})`);
-    
+
     try {
       // For rejoin, try to find the player's previous room first
       let roomId = null;
       let room = null;
-      
+
       // Search for the player in existing rooms if previousSocketId is provided
       if (previousSocketId) {
         for (const [id, gameRoom] of this.rooms) {
@@ -106,12 +106,12 @@ export class GameService {
           }
         }
       }
-      
+
       // If no previous room found, assign to available room
       if (!room) {
         roomId = this.findAvailableRoom();
         room = this.rooms.get(roomId);
-        
+
         if (!room) {
           console.log(`Room ${roomId} not found, creating new room for rejoin`);
           room = {
@@ -137,7 +137,7 @@ export class GameService {
           existingPlayer.id = socket.id;
           room.players.set(socket.id, existingPlayer);
           this.playerRooms.set(socket.id, roomId!);
-          
+
           // Clean up old player room mapping if it exists
           this.playerRooms.delete(previousSocketId);
         }
@@ -160,9 +160,9 @@ export class GameService {
       }
 
       socket.join(roomId!);
-      
+
       console.log(`✅ Player ${username} successfully rejoined room ${roomId}. Room now has ${room.players.size} players`);
-      
+
       // Send current game state
       const gameState = {
         roomId: roomId!,
@@ -172,10 +172,10 @@ export class GameService {
         timeRemaining: room.startTime ? Math.max(0, 120000 - (Date.now() - room.startTime)) : undefined,
         roomType: room.type
       };
-      
+
       socket.emit(ServerEvents.REJOIN_SUCCESS, { gameState });
       this.broadcastGameState(roomId!);
-      
+
     } catch (error) {
       console.error('Error rejoining room:', error);
       socket.emit(ServerEvents.REJOIN_FAILED, 'Failed to rejoin room');
@@ -185,7 +185,7 @@ export class GameService {
   async sendGameState(socket: Socket, roomId: string) {
     console.log(`📋 Sending game state for room ${roomId} to socket ${socket.id}`);
     const room = this.rooms.get(roomId);
-    
+
     if (!room) {
       console.error(`❌ Room ${roomId} not found when sending game state`);
       socket.emit(ServerEvents.ERROR, 'Room not found');
@@ -210,7 +210,7 @@ export class GameService {
     console.log(`🎮 startGame called for room ${roomId} by socket ${socket.id}`);
     console.log(`🏠 Available rooms:`, Array.from(this.rooms.keys()));
     console.log(`👤 Player rooms map:`, Object.fromEntries(this.playerRooms));
-    
+
     const room = this.rooms.get(roomId);
 
     if (!room) {
@@ -269,6 +269,46 @@ export class GameService {
     }
   }
 
+  async joinNextRound(socket: Socket, data: any) {
+    console.log(`🏆 Player ${socket.id} requesting to join next round`);
+
+    // Get the current player data
+    const currentRoomId = this.playerRooms.get(socket.id);
+    if (!currentRoomId) {
+      console.error('Player not in any room');
+      socket.emit(ServerEvents.ERROR, 'Not in any room');
+      return;
+    }
+
+    const currentRoom = this.rooms.get(currentRoomId);
+    if (!currentRoom) {
+      console.error('Current room not found');
+      socket.emit(ServerEvents.ERROR, 'Current room not found');
+      return;
+    }
+
+    const player = currentRoom.players.get(socket.id);
+    if (!player) {
+      console.error('Player not found in current room');
+      socket.emit(ServerEvents.ERROR, 'Player not found');
+      return;
+    }
+
+    // Check if player is indeed a winner (rank 1)
+    if (player.rank !== 1) {
+      console.error('Only winners can join next round');
+      socket.emit(ServerEvents.ERROR, 'Only winners can join next round');
+      return;
+    }
+
+    // Remove player from current room
+    currentRoom.players.delete(socket.id);
+    socket.leave(currentRoomId);
+
+    // Move winner to winner room
+    this.moveWinnerToWinnerRoom(player);
+  }
+
   private startGameInternal(roomId: string) {
     console.log(`Starting game in room ${roomId}`);
     const room = this.rooms.get(roomId);
@@ -295,13 +335,8 @@ export class GameService {
 
     this.io.to(roomId).emit(ServerEvents.GAME_ENDED, { results });
 
-    // Move winner to winner room after a short delay
-    if (results.length > 0 && results[0].rank === 1) {
-      const winner = results[0];
-      setTimeout(() => {
-        this.moveWinnerToWinnerRoom(winner);
-      }, 5000); // Give 5 seconds to see results
-    }
+    // Don't automatically move winner - they'll have a "Next Round" button instead
+    // The winner can choose when to join the next round via JOIN_NEXT_ROUND event
 
     // Clean up room after 30 seconds
     setTimeout(() => {
@@ -328,7 +363,7 @@ export class GameService {
 
     console.log(`📤 Emitting game-state to room ${roomId}:`, gameState);
     console.log(`👥 Room has ${room.players.size} players:`, Array.from(room.players.keys()));
-    
+
     this.io.to(roomId).emit(ServerEvents.GAME_STATE, gameState);
     console.log(`✅ game-state event sent to room ${roomId}`);
   }
@@ -347,7 +382,7 @@ export class GameService {
   handleDisconnect(socket: Socket) {
     const roomId = this.playerRooms.get(socket.id);
     console.log(`🔌 handleDisconnect for socket ${socket.id}, roomId: ${roomId}`);
-    
+
     if (!roomId) return;
 
     const room = this.rooms.get(roomId);
@@ -355,7 +390,7 @@ export class GameService {
       console.log(`👥 Removing player ${socket.id} from room ${roomId}. Players before removal: ${room.players.size}`);
       room.players.delete(socket.id);
       console.log(`👥 Players after removal: ${room.players.size}`);
-      
+
       this.broadcastGameState(roomId);
 
       if (room.players.size === 0) {
@@ -378,11 +413,11 @@ export class GameService {
 
   private moveWinnerToWinnerRoom(winner: Player) {
     console.log(`🏆 Moving winner ${winner.username} to winner room`);
-    
+
     // Find an available winner room
     const winnerRoomId = this.findAvailableRoom(RoomType.WINNER);
     let winnerRoom = this.rooms.get(winnerRoomId);
-    
+
     // Create winner room if it doesn't exist
     if (!winnerRoom) {
       console.log(`Creating new winner room ${winnerRoomId}`);
@@ -417,16 +452,16 @@ export class GameService {
     const winnerSocket = this.findSocketById(winner.id);
     if (winnerSocket) {
       winnerSocket.join(winnerRoomId);
-      winnerSocket.emit(ServerEvents.WINNER_PROMOTED, { 
+      winnerSocket.emit(ServerEvents.WINNER_PROMOTED, {
         message: 'Congratulations! You won and have been promoted to a Winner Room!',
-        newRoomId: winnerRoomId 
+        newRoomId: winnerRoomId
       });
-      winnerSocket.emit(ServerEvents.ROOM_JOINED, { 
-        roomId: winnerRoomId, 
+      winnerSocket.emit(ServerEvents.ROOM_JOINED, {
+        roomId: winnerRoomId,
         phrase: winnerRoom.phrase,
-        isWinnerRoom: true 
+        isWinnerRoom: true
       });
-      
+
       console.log(`✅ Winner ${winner.username} moved to winner room ${winnerRoomId}`);
       this.broadcastGameState(winnerRoomId);
     }

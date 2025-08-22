@@ -11,6 +11,7 @@ export enum ClientEvents {
   START_GAME = 'start-game',
   GET_GAME_STATE = 'get-game-state',
   START_TYPING = 'start-typing',
+  JOIN_NEXT_ROUND = 'join-next-round',
   DISCONNECT = 'disconnect',
   ERROR = 'error'
 }

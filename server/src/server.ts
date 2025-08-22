@@ -80,6 +80,11 @@ io.on('connection', (socket) => {
     await gameService.updateTypingProgress(socket, data);
   });
 
+  socket.on(ClientEvents.JOIN_NEXT_ROUND, async (data) => {
+    console.log(`🏆 join-next-round event from ${socket.id}:`, data);
+    await gameService.joinNextRound(socket, data);
+  });
+
   socket.on(ClientEvents.DISCONNECT, (reason) => {
     console.log(`❌ Player disconnected: ${socket.id}, reason: ${reason} at ${new Date().toISOString()}`);
     gameService.handleDisconnect(socket);

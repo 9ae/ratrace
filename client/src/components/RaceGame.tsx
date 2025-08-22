@@ -13,7 +13,7 @@ interface RaceGameProps {
 export default function RaceGame({ roomId, phrase: initialPhrase, onLeaveGame }: RaceGameProps) {
   const [currentInput, setCurrentInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const { socket, gameState, gameStarted, raceFinished, isReconnecting, isConnected } = useSocket();
+  const { socket, gameState, gameStarted, raceFinished, isWinner, isReconnecting, isConnected } = useSocket();
 
   // Use phrase from gameState if available, otherwise use initial phrase
   const currentPhrase = gameState?.phrase || initialPhrase;
@@ -53,6 +53,15 @@ export default function RaceGame({ roomId, phrase: initialPhrase, onLeaveGame }:
     console.log('🚀 Starting game for room:', gameState.roomId);
     console.log('📤 Emitting start-game event');
     socket.emit(ClientEvents.START_GAME, { roomId: gameState.roomId });
+  };
+
+  const handleJoinNextRound = () => {
+    if (!socket) {
+      console.error('❌ Cannot join next round - socket not available');
+      return;
+    }
+    console.log('🏆 Joining next round');
+    socket.emit(ClientEvents.JOIN_NEXT_ROUND, {});
   };
 
   const handleInputChange = (value: string) => {
@@ -138,6 +147,15 @@ export default function RaceGame({ roomId, phrase: initialPhrase, onLeaveGame }:
               className="px-8 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium text-md"
             >
               Start Game
+            </button>
+          )}
+
+          {isWinner && (gameState?.status === GameStatus.FINISHED || gameState?.status === GameStatus.ACTIVE) && (
+            <button
+              onClick={handleJoinNextRound}
+              className="px-8 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium text-md flex items-center gap-2"
+            >
+              🏆 Next Round
             </button>
           )}
 

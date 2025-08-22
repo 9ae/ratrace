@@ -12,6 +12,7 @@ export function useSocket(serverPath: string = process.env.API_URL || 'http://lo
   const [gameStarted, setGameStarted] = useState(false);
   const [raceFinished, setRaceFinished] = useState(false);
   const [gameResults, setGameResults] = useState<any>(null);
+  const [isWinner, setIsWinner] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [roomChanged, setRoomChanged] = useState<{ roomId: string, phrase: string } | null>(null);
 
@@ -70,11 +71,16 @@ export function useSocket(serverPath: string = process.env.API_URL || 'http://lo
     socketInstance.on(ServerEvents.GAME_STARTED, () => {
       console.log('🎮 Game started (persistent listener)');
       setGameStarted(true);
+      setIsWinner(false); // Reset winner state when new game starts
     });
 
     socketInstance.on(ServerEvents.RACE_FINISHED, (data) => {
       console.log('🏁 Race finished (persistent listener):', data);
       setRaceFinished(true);
+      // Check if the player won (rank 1)
+      if (data.position === 1) {
+        setIsWinner(true);
+      }
     });
 
     socketInstance.on(ServerEvents.GAME_ENDED, (data) => {
@@ -110,6 +116,7 @@ export function useSocket(serverPath: string = process.env.API_URL || 'http://lo
         setGameStarted(false);
         setRaceFinished(false);
         setGameResults(null);
+        setIsWinner(false);
       }
     });
 
@@ -159,12 +166,14 @@ export function useSocket(serverPath: string = process.env.API_URL || 'http://lo
     gameStarted,
     raceFinished,
     gameResults,
+    isWinner,
     isReconnecting,
     roomChanged,
     setGameState,
     setGameStarted,
     setRaceFinished,
     setGameResults,
+    setIsWinner,
     saveSession,
     clearSession,
     clearRoomChanged
