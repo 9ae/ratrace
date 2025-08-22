@@ -10,7 +10,6 @@
     - [x] hide text until the game starts
 - [x] Extract sample phrases out of gameUtils into it's own file. Fill it with 100 lines from Audre Lorde's poems.
 - [x] Autofocus on the text field for all the players when the game starts
-- [ ] Make design mock for game
 - [x] Make start and leave game buttons aligned
-- [ ] Instead of showing a progress bar at the bottom, show the player's emoji moving across a race track
+- [x] Instead of showing a progress bar at the bottom, show the player's emoji moving across a race track
 - [x] fix input field colors
