@@ -9,7 +9,12 @@
     "start": "node dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["racing", "typing", "game", "websocket"],
+  "keywords": [
+    "racing",
+    "typing",
+    "game",
+    "websocket"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
@@ -20,14 +25,14 @@
     "helmet": "^8.1.0",
     "morgan": "^1.10.1",
     "redis": "^5.8.2",
-    "socket.io": "^4.8.1"
-  },
-  "devDependencies": {
+    "socket.io": "^4.8.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.3.0",
-    "nodemon": "^3.1.10",
-    "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2"
   }
 }
